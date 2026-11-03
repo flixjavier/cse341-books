@@ -23,3 +23,5 @@ const startServer = async () => {
 };
 
 await startServer();
+
+export default app;
