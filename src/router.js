@@ -1,5 +1,11 @@
 import express from "express";
-import { getBooksHandler, getBookByIdHandler } from "./controllers/books.js";
+import {
+	getBooksHandler,
+	getBookByIdHandler,
+	createBookHandler,
+	updateBookHandler,
+	deleteBookHandler,
+} from "./controllers/books.js";
 import {
 	getAuthorsHandler,
 	getAuthorByIdHandler,
@@ -12,44 +18,161 @@ const router = express.Router();
 
 /**
  * @openapi
+ * components:
+ *   schemas:
+ *     BookInput:
+ *       type: object
+ *       required: [authorId, title, publicationDate]
+ *       properties:
+ *         authorId:
+ *           type: string
+ *           description: The custom ID of an existing author
+ *           example: a1
+ *         title:
+ *           type: string
+ *           example: Example Book Title
+ *         publicationDate:
+ *           type: string
+ *           example: "2026-01-15"
+ *     Book:
+ *       allOf:
+ *         - $ref: '#/components/schemas/BookInput'
+ *         - type: object
+ *           required: [id]
+ *           properties:
+ *             id:
+ *               type: string
+ *               description: The custom book ID
+ *               example: b4
+ *     BookError:
+ *       type: object
+ *       required: [message]
+ *       properties:
+ *         message:
+ *           type: string
+ *   responses:
+ *     BookNotFound:
+ *       description: Book not found
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookError'
+ *           example: { message: Book not found }
+ *     BookServerError:
+ *       description: Internal server error
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookError'
+ *           example: { message: Internal server error }
  * /books:
  *   get:
- *    summary: Get all books
- *    tags:
- *     - Books
- *    responses:
- *      200:
- *        description: Book returned successfully
- *      500:
- *        description: Internal server error
+ *     summary: Get all books
+ *     tags: [Books]
+ *     responses:
+ *       200:
+ *         description: Array of books
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Book'
+ *       500:
+ *         $ref: '#/components/responses/BookServerError'
+ *   post:
+ *     summary: Create a book
+ *     tags: [Books]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Book'
+ *           example: { id: b4, authorId: a1, title: Example Book Title, publicationDate: "2026-01-15" }
+ *     responses:
+ *       201:
+ *         description: Created book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         description: Invalid input, duplicate book ID, or unknown author ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BookError'
+ *             example: { message: Author ID does not exist }
+ *       500:
+ *         $ref: '#/components/responses/BookServerError'
+ * /books/{id}:
+ *   parameters:
+ *     - in: path
+ *       name: id
+ *       required: true
+ *       description: The custom book ID, such as b1
+ *       schema:
+ *         type: string
+ *   get:
+ *     summary: Get one book by ID
+ *     tags: [Books]
+ *     responses:
+ *       200:
+ *         description: Matching book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       404:
+ *         $ref: '#/components/responses/BookNotFound'
+ *       500:
+ *         $ref: '#/components/responses/BookServerError'
+ *   put:
+ *     summary: Update a book
+ *     tags: [Books]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BookInput'
+ *           example: { authorId: a2, title: Updated Book Title, publicationDate: "2026-02-20" }
+ *     responses:
+ *       200:
+ *         description: Updated book
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Book'
+ *       400:
+ *         description: Invalid input or unknown author ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BookError'
+ *             example: { message: Author ID does not exist }
+ *       404:
+ *         $ref: '#/components/responses/BookNotFound'
+ *       500:
+ *         $ref: '#/components/responses/BookServerError'
+ *   delete:
+ *     summary: Delete a book
+ *     tags: [Books]
+ *     responses:
+ *       204:
+ *         description: Book deleted successfully. No response body.
+ *       404:
+ *         $ref: '#/components/responses/BookNotFound'
+ *       500:
+ *         $ref: '#/components/responses/BookServerError'
  */
 
 router.get("/books", getBooksHandler);
-
-/**
- * @openapi
- * /books/{id}:
- *   get:
- *     summary: Get one book by id
- *     tags:
- *       - Books
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         description: The custom book id, such as b1
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Book returned successfully
- *       404:
- *         description: Book not found
- *       500:
- *         description: Internal server error
- */
-
 router.get("/books/:id", getBookByIdHandler);
+router.post("/books", createBookHandler);
+router.put("/books/:id", updateBookHandler);
+router.delete("/books/:id", deleteBookHandler);
 
 /**
  * @openapi
